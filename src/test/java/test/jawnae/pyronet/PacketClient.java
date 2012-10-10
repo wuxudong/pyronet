@@ -65,5 +65,7 @@ public class PacketClient extends PyroClientAdapter {
 
         // add the packet handler to the
         feeder.addByteSink(handler);
+
+        client.addListener(feeder);
     }
 }

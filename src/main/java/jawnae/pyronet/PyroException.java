@@ -4,6 +4,7 @@
 
 package jawnae.pyronet;
 
+@SuppressWarnings("serial")
 public class PyroException extends RuntimeException {
     public PyroException() {
         super();

@@ -14,8 +14,6 @@ import jawnae.pyronet.events.PyroClientAdapter;
 public class PyroByteSinkFeeder extends PyroClientAdapter {
     private final PyroSelector selector;
 
-    private final ByteBuffer buf;
-
     private final ByteStream inbound;
 
     private final LinkedList<ByteSink> sinks;
@@ -30,7 +28,6 @@ public class PyroByteSinkFeeder extends PyroClientAdapter {
 
     public PyroByteSinkFeeder(PyroSelector selector, int bufferSize) {
         this.selector = selector;
-        this.buf = this.selector.malloc(bufferSize);
         this.inbound = new ByteStream();
         this.sinks = new LinkedList<ByteSink>();
     }
@@ -78,26 +75,18 @@ public class PyroByteSinkFeeder extends PyroClientAdapter {
             return;
         }
 
-        this.buf.clear();
-        this.inbound.get(this.buf);
-        int off = 0;
-        int end = this.buf.position();
-
         ByteSink currentSink = this.sinks.removeFirst();
 
-        outer: while (off < end) {
-            switch (currentSink.feed(this.buf.get(off))) {
+        while (currentSink != null && inbound.hasData()) {
+            switch (currentSink.feed(inbound.read())) {
                 case ByteSink.FEED_ACCEPTED:
-                    off += 1;
-                    continue outer;
+                    continue; // continue to next feed
 
                 case ByteSink.FEED_ACCEPTED_LAST:
-                    off += 1;
-                    break;
+                    break; // break out switch, not while
 
                 case ByteSink.FEED_REJECTED:
-                    off += 0;
-                    break;
+                    break; // break out switch, not while
             }
 
             if (this.sinks.isEmpty()) {
@@ -112,6 +101,5 @@ public class PyroByteSinkFeeder extends PyroClientAdapter {
             this.sinks.addFirst(currentSink);
         }
 
-        this.inbound.discard(off);
     }
 }

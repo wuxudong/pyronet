@@ -48,9 +48,14 @@ public abstract class ByteSinkPacket32 implements ByteSink {
                 current = new ByteSinkLength(len) {
                     @Override
                     public void onReady(ByteBuffer buffer) {
+                        // sometime we want do reset in
+                        // ByteSinkPacket24.this.onReady, then add the sink back
+                        // to feeder, in such process, onReady should be execute
+                        // at last.
+                        current = null;
+
                         // content is received
                         ByteSinkPacket32.this.onReady(buffer);
-                        current = null;
                     }
                 };
             }
@@ -75,6 +80,9 @@ public abstract class ByteSinkPacket32 implements ByteSink {
             return result;
         }
 
-        return this.current.feed(b);
+        else {
+            return FEED_ACCEPTED;
+        }
+        // return this.current.feed(b);
     }
 }

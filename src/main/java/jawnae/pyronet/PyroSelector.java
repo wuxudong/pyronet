@@ -16,10 +16,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import jawnae.pyronet.events.PyroSelectorListener;
-
-import craterstudio.util.concur.SimpleBlockingQueue;
 
 public class PyroSelector {
     public static boolean DO_NOT_CHECK_NETWORK_THREAD = false;
@@ -268,14 +268,18 @@ public class PyroSelector {
 
     //
 
-    private SimpleBlockingQueue<Runnable> tasks = new SimpleBlockingQueue<Runnable>();
+    private BlockingQueue<Runnable> tasks = new LinkedBlockingQueue<Runnable>();
 
     public void scheduleTask(Runnable task) {
         if (task == null) {
             throw new NullPointerException();
         }
 
-        this.tasks.put(task);
+        try {
+            this.tasks.put(task);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void wakeup() {

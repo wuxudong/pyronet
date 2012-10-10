@@ -113,4 +113,15 @@ public class ByteStream {
                     + original + " bytes");
         }
     }
+
+    public byte read() {
+        ByteBuffer data = this.queue.get(0);
+        byte result = data.get();
+        if (!data.hasRemaining()) {
+            // discard the first buffer
+            this.queue.remove(0);
+        }
+        return result;
+    }
+
 }
