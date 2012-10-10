@@ -6,10 +6,9 @@ package jawnae.pyronet.events;
 
 import jawnae.pyronet.PyroClient;
 
-public interface PyroServerListener
-{
-   /**
-    * Note: invoked from the PyroSelector-thread that created this PyroClient
-    */
-   public void acceptedClient(PyroClient client);
+public interface PyroServerListener {
+    /**
+     * Note: invoked from the PyroSelector-thread that created this PyroClient
+     */
+    public void acceptedClient(PyroClient client);
 }

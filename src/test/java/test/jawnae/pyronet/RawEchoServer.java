@@ -14,69 +14,58 @@ import jawnae.pyronet.PyroServer;
 import jawnae.pyronet.events.PyroClientAdapter;
 import jawnae.pyronet.events.PyroServerListener;
 
-public class RawEchoServer
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class RawEchoServer {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      PyroSelector selector = new PyroSelector();
-      PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
-      System.out.println("listening: " + server);
+    public static final int PORT = 8421;
 
-      server.addListener(new PyroServerListener()
-      {
-         @Override
-         public void acceptedClient(PyroClient client)
-         {
-            System.out.println("accepted-client: " + client);
+    public static void main(String[] args) throws IOException {
+        PyroSelector selector = new PyroSelector();
+        PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
+        System.out.println("listening: " + server);
 
-            echoBytesForTwoSeconds(client);
-         }
-      });
+        server.addListener(new PyroServerListener() {
+            @Override
+            public void acceptedClient(PyroClient client) {
+                System.out.println("accepted-client: " + client);
 
-      while (true)
-      {
-         selector.select(100);
-      }
-   }
+                echoBytesForTwoSeconds(client);
+            }
+        });
 
-   static void echoBytesForTwoSeconds(PyroClient client)
-   {
-      try
-      {
-         client.setTimeout(2 * 1000);
-      }
-      catch (IOException exc)
-      {
-         exc.printStackTrace();
-         return;
-      }
+        while (true) {
+            selector.select(100);
+        }
+    }
 
-      client.addListener(new PyroClientAdapter()
-      {
-         @Override
-         public void receivedData(PyroClient client, ByteBuffer buffer)
-         {
-            ByteBuffer echo = buffer.slice();
+    static void echoBytesForTwoSeconds(PyroClient client) {
+        try {
+            client.setTimeout(2 * 1000);
+        } catch (IOException exc) {
+            exc.printStackTrace();
+            return;
+        }
 
-            // convert data to text
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
-            String text = new String(data);
+        client.addListener(new PyroClientAdapter() {
+            @Override
+            public void receivedData(PyroClient client, ByteBuffer buffer) {
+                ByteBuffer echo = buffer.slice();
 
-            // dump to console
-            System.out.println("received \"" + text + "\" from " + client);
+                // convert data to text
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                String text = new String(data);
 
-            client.write(echo);
-         }
+                // dump to console
+                System.out.println("received \"" + text + "\" from " + client);
 
-         @Override
-         public void disconnectedClient(PyroClient client)
-         {
-            System.out.println("disconnected");
-         }
-      });
-   }
+                client.write(echo);
+            }
+
+            @Override
+            public void disconnectedClient(PyroClient client) {
+                System.out.println("disconnected");
+            }
+        });
+    }
 }

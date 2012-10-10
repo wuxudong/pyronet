@@ -9,20 +9,18 @@ import java.util.Arrays;
 
 import jawnae.pyronet.PyroSelector;
 
-public class PyroRoundrobinSelectorProvider implements PyroSelectorProvider
-{
-   private final PyroSelector[] selectors;
-   private int                  index;
+public class PyroRoundrobinSelectorProvider implements PyroSelectorProvider {
+    private final PyroSelector[] selectors;
 
-   public PyroRoundrobinSelectorProvider(PyroSelector[] selectors)
-   {
-      this.selectors = Arrays.copyOf(selectors, selectors.length);
-   }
+    private int index;
 
-   @Override
-   public PyroSelector provideFor(SocketChannel channel)
-   {
-      // this is called from the PyroServer-selector thread
-      return this.selectors[this.index++ % this.selectors.length];
-   }
+    public PyroRoundrobinSelectorProvider(PyroSelector[] selectors) {
+        this.selectors = Arrays.copyOf(selectors, selectors.length);
+    }
+
+    @Override
+    public PyroSelector provideFor(SocketChannel channel) {
+        // this is called from the PyroServer-selector thread
+        return this.selectors[this.index++ % this.selectors.length];
+    }
 }

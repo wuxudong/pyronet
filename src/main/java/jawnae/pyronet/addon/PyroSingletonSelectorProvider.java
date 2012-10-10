@@ -8,18 +8,15 @@ import java.nio.channels.SocketChannel;
 
 import jawnae.pyronet.PyroSelector;
 
-public class PyroSingletonSelectorProvider implements PyroSelectorProvider
-{
-   private final PyroSelector selector;
+public class PyroSingletonSelectorProvider implements PyroSelectorProvider {
+    private final PyroSelector selector;
 
-   public PyroSingletonSelectorProvider(PyroSelector selector)
-   {
-      this.selector = selector;
-   }
+    public PyroSingletonSelectorProvider(PyroSelector selector) {
+        this.selector = selector;
+    }
 
-   @Override
-   public PyroSelector provideFor(SocketChannel channel)
-   {
-      return this.selector;
-   }
+    @Override
+    public PyroSelector provideFor(SocketChannel channel) {
+        return this.selector;
+    }
 }

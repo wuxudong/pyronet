@@ -15,68 +15,67 @@ import jawnae.pyronet.traffic.ByteSink;
 import jawnae.pyronet.traffic.ByteSinkLength;
 import jawnae.pyronet.traffic.PyroByteSinkFeeder;
 
-public class AdderClient extends PyroClientAdapter
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class AdderClient extends PyroClientAdapter {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      AdderClient adder = new AdderClient();
-      PyroSelector selector = new PyroSelector();
+    public static final int PORT = 8421;
 
-      InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
-      System.out.println("connecting...");
-      PyroClient client = selector.connect(bind);
-      client.addListener(adder);
+    public static void main(String[] args) throws IOException {
+        AdderClient adder = new AdderClient();
+        PyroSelector selector = new PyroSelector();
 
-      while (true)
-      {
-         // perform network I/O
+        InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
+        System.out.println("connecting...");
+        PyroClient client = selector.connect(bind);
+        client.addListener(adder);
 
-         selector.select();
-      }
-   }
+        while (true) {
+            // perform network I/O
 
-   static int bytesInInteger = 4;
+            selector.select();
+        }
+    }
 
-   @Override
-   public void connectedClient(final PyroClient client)
-   {
-      System.out.println("connected: " + client);
+    static int bytesInInteger = 4;
 
-      // first create 
-      final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
+    @Override
+    public void connectedClient(final PyroClient client) {
+        System.out.println("connected: " + client);
 
-      // generate two random numbers to add
-      final int value1 = (int) (Math.random() * 100);
-      final int value2 = (int) (Math.random() * 100);
+        // first create
+        final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
 
-      System.out.println("client: going to let the server calculate: " + value1 + "+" + value2);
+        // generate two random numbers to add
+        final int value1 = (int) (Math.random() * 100);
+        final int value2 = (int) (Math.random() * 100);
 
-      ByteBuffer payload1 = (ByteBuffer) ByteBuffer.allocate(4).putInt(value1).flip();
-      ByteBuffer payload2 = (ByteBuffer) ByteBuffer.allocate(4).putInt(value2).flip();
+        System.out.println("client: going to let the server calculate: "
+                + value1 + "+" + value2);
 
-      client.write(payload1);
-      client.write(payload2);
+        ByteBuffer payload1 = (ByteBuffer) ByteBuffer.allocate(4)
+                .putInt(value1).flip();
+        ByteBuffer payload2 = (ByteBuffer) ByteBuffer.allocate(4)
+                .putInt(value2).flip();
 
-      // lets create a handler, it will be executed once the server sends the answer
-      ByteSink answerSink = new ByteSinkLength(bytesInInteger)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            int value = buffer.getInt();
+        client.write(payload1);
+        client.write(payload2);
 
-            System.out.println("server said: " + value);
+        // lets create a handler, it will be executed once the server sends the
+        // answer
+        ByteSink answerSink = new ByteSinkLength(bytesInInteger) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                int value = buffer.getInt();
 
-            // this is all we needed
-            client.shutdown();
-         }
-      };
+                System.out.println("server said: " + value);
 
-      // add the packet handler to the 
-      feeder.addByteSink(answerSink);
-      client.addListener(feeder);
-   }
+                // this is all we needed
+                client.shutdown();
+            }
+        };
+
+        // add the packet handler to the
+        feeder.addByteSink(answerSink);
+        client.addListener(feeder);
+    }
 }

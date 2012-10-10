@@ -20,604 +20,532 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import jawnae.pyronet.events.PyroClientListener;
 import jawnae.pyronet.traffic.ByteStream;
 
-public class PyroClient
-{
-   private final PyroSelector selector;
-   final PyroServer           server;
-   private final SelectionKey key;
-   private final ByteStream   outbound;
+public class PyroClient {
+    private final PyroSelector selector;
 
-   // called by PyroSelector.connect()
-   PyroClient(PyroSelector selector, InetSocketAddress bind, InetSocketAddress host) throws IOException
-   {
-      this(selector, null, PyroClient.bindAndConfigure(selector, SocketChannel.open(), bind));
+    final PyroServer server;
 
-      ((SocketChannel) this.key.channel()).connect(host);
-   }
+    private final SelectionKey key;
 
-   // called by PyroClient and PyroServer
-   PyroClient(PyroSelector selector, PyroServer server, SelectionKey key)
-   {
-      this.selector = selector;
-      this.selector.checkThread();
+    private final ByteStream outbound;
 
-      this.server = server;
-      this.key = key;
-      this.key.attach(this);
+    // called by PyroSelector.connect()
+    PyroClient(PyroSelector selector, InetSocketAddress bind,
+            InetSocketAddress host) throws IOException {
+        this(selector, null, PyroClient.bindAndConfigure(selector,
+                SocketChannel.open(), bind));
 
-      this.outbound = new ByteStream();
-      this.listeners = new CopyOnWriteArrayList<PyroClientListener>();
-      this.lastEventTime = System.currentTimeMillis();
-   }
+        ((SocketChannel) this.key.channel()).connect(host);
+    }
 
-   //
+    // called by PyroClient and PyroServer
+    PyroClient(PyroSelector selector, PyroServer server, SelectionKey key) {
+        this.selector = selector;
+        this.selector.checkThread();
 
-   private final List<PyroClientListener> listeners;
+        this.server = server;
+        this.key = key;
+        this.key.attach(this);
 
-   public void addListener(PyroClientListener listener)
-   {
-      this.selector.checkThread();
+        this.outbound = new ByteStream();
+        this.listeners = new CopyOnWriteArrayList<PyroClientListener>();
+        this.lastEventTime = System.currentTimeMillis();
+    }
 
-      this.listeners.add(listener);
-   }
+    //
 
-   public void removeListener(PyroClientListener listener)
-   {
-      this.selector.checkThread();
+    private final List<PyroClientListener> listeners;
 
-      this.listeners.remove(listener);
-   }
+    public void addListener(PyroClientListener listener) {
+        this.selector.checkThread();
 
-   public void removeListeners()
-   {
-      this.selector.checkThread();
+        this.listeners.add(listener);
+    }
 
-      this.listeners.clear();
-   }
+    public void removeListener(PyroClientListener listener) {
+        this.selector.checkThread();
 
-   /**
-    * Returns the PyroSelector that created this client
-    */
+        this.listeners.remove(listener);
+    }
 
-   public PyroSelector selector()
-   {
-      return this.selector;
-   }
+    public void removeListeners() {
+        this.selector.checkThread();
 
-   //
+        this.listeners.clear();
+    }
 
-   private Object attachment;
+    /**
+     * Returns the PyroSelector that created this client
+     */
 
-   /**
-    * Attach any object to a client, for example to store session information
-    */
+    public PyroSelector selector() {
+        return this.selector;
+    }
 
-   public void attach(Object attachment)
-   {
-      this.attachment = attachment;
-   }
+    //
 
-   /**
-    * Returns the previously attached object, or <code>null</code> if none is set
-    */
+    private Object attachment;
 
-   public <T> T attachment()
-   {
-      return (T) this.attachment;
-   }
+    /**
+     * Attach any object to a client, for example to store session information
+     */
 
-   // 
+    public void attach(Object attachment) {
+        this.attachment = attachment;
+    }
 
-   /**
-    * Returns the local socket address (host+port)
-    */
+    /**
+     * Returns the previously attached object, or <code>null</code> if none is
+     * set
+     */
 
-   public InetSocketAddress getLocalAddress()
-   {
-      Socket s = ((SocketChannel) key.channel()).socket();
-      return (InetSocketAddress) s.getLocalSocketAddress();
-   }
+    public <T> T attachment() {
+        return (T) this.attachment;
+    }
 
-   /**
-    * Returns the remove socket address (host+port)
-    */
+    //
 
-   public InetSocketAddress getRemoteAddress()
-   {
-      Socket s = ((SocketChannel) key.channel()).socket();
-      return (InetSocketAddress) s.getRemoteSocketAddress();
-   }
+    /**
+     * Returns the local socket address (host+port)
+     */
 
-   //
+    public InetSocketAddress getLocalAddress() {
+        Socket s = ((SocketChannel) key.channel()).socket();
+        return (InetSocketAddress) s.getLocalSocketAddress();
+    }
 
-   public void setTimeout(int ms) throws IOException
-   {
-      this.selector.checkThread();
+    /**
+     * Returns the remove socket address (host+port)
+     */
 
-      ((SocketChannel) key.channel()).socket().setSoTimeout(ms);
+    public InetSocketAddress getRemoteAddress() {
+        Socket s = ((SocketChannel) key.channel()).socket();
+        return (InetSocketAddress) s.getRemoteSocketAddress();
+    }
 
-      // prevent a call to setTimeout from immediately causing a timeout
-      this.lastEventTime = System.currentTimeMillis();
-      this.timeout = ms;
-   }
+    //
 
-   public void setLinger(boolean enabled, int seconds) throws IOException
-   {
-      this.selector.checkThread();
+    public void setTimeout(int ms) throws IOException {
+        this.selector.checkThread();
 
-      ((SocketChannel) key.channel()).socket().setSoLinger(enabled, seconds);
-   }
+        ((SocketChannel) key.channel()).socket().setSoTimeout(ms);
 
-   public void setKeepAlive(boolean enabled) throws IOException
-   {
-      this.selector.checkThread();
+        // prevent a call to setTimeout from immediately causing a timeout
+        this.lastEventTime = System.currentTimeMillis();
+        this.timeout = ms;
+    }
 
-      ((SocketChannel) key.channel()).socket().setKeepAlive(enabled);
-   }
+    public void setLinger(boolean enabled, int seconds) throws IOException {
+        this.selector.checkThread();
 
-   //
+        ((SocketChannel) key.channel()).socket().setSoLinger(enabled, seconds);
+    }
 
-   /**
-    * Returns the server that accepted this client.
-    * @throws PyroException if this client was not accepted by a server (it connected to a server)
-    */
+    public void setKeepAlive(boolean enabled) throws IOException {
+        this.selector.checkThread();
 
-   public final PyroServer getServer() throws PyroException
-   {
-      if (this.server == null)
-         throw new PyroException("this client was not accepted by a server");
-      return this.server;
-   }
+        ((SocketChannel) key.channel()).socket().setKeepAlive(enabled);
+    }
 
-   //
+    //
 
-   //
+    /**
+     * Returns the server that accepted this client.
+     * 
+     * @throws PyroException
+     *             if this client was not accepted by a server (it connected to
+     *             a server)
+     */
 
-   private boolean doEagerWrite = false;
+    public final PyroServer getServer() throws PyroException {
+        if (this.server == null)
+            throw new PyroException("this client was not accepted by a server");
+        return this.server;
+    }
 
-   /**
-    * If enabled, causes calls to write() to make an attempt to write the bytes,
-    * without waiting for the selector to signal writable state.
-    */
+    //
 
-   public void setEagerWrite(boolean enabled)
-   {
-      this.doEagerWrite = enabled;
-   }
+    //
 
-   //
+    private boolean doEagerWrite = false;
 
-   public void writeCopy(ByteBuffer data) throws PyroException
-   {
-      this.write(this.selector.copy(data));
-   }
+    /**
+     * If enabled, causes calls to write() to make an attempt to write the
+     * bytes, without waiting for the selector to signal writable state.
+     */
 
-   /**
-    * Will enqueue the bytes to send them<br>
-    * 1. when the selector is ready to write, if eagerWrite is disabled (default)<br>
-    * 2. immediately, if eagerWrite is enabled<br> 
-    * The ByteBuffer instance is kept, not copied, and thus should not be modified
-    * @throws PyroException when shutdown() has been called.
-    */
+    public void setEagerWrite(boolean enabled) {
+        this.doEagerWrite = enabled;
+    }
 
-   public void write(ByteBuffer data) throws PyroException
-   {
-      this.selector.checkThread();
+    //
 
-      if (!this.key.isValid())
-      {
-         // graceful, as this is meant to be async
-         return;
-      }
+    public void writeCopy(ByteBuffer data) throws PyroException {
+        this.write(this.selector.copy(data));
+    }
 
-      if (this.doShutdown)
-      {
-         throw new PyroException("shutting down");
-      }
+    /**
+     * Will enqueue the bytes to send them<br>
+     * 1. when the selector is ready to write, if eagerWrite is disabled
+     * (default)<br>
+     * 2. immediately, if eagerWrite is enabled<br>
+     * The ByteBuffer instance is kept, not copied, and thus should not be
+     * modified
+     * 
+     * @throws PyroException
+     *             when shutdown() has been called.
+     */
 
-      this.outbound.append(data);
+    public void write(ByteBuffer data) throws PyroException {
+        this.selector.checkThread();
 
-      if (this.doEagerWrite)
-      {
-         try
-         {
-            this.onReadyToWrite(System.currentTimeMillis());
-         }
-         catch (NotYetConnectedException exc)
-         {
+        if (!this.key.isValid()) {
+            // graceful, as this is meant to be async
+            return;
+        }
+
+        if (this.doShutdown) {
+            throw new PyroException("shutting down");
+        }
+
+        this.outbound.append(data);
+
+        if (this.doEagerWrite) {
+            try {
+                this.onReadyToWrite(System.currentTimeMillis());
+            } catch (NotYetConnectedException exc) {
+                this.adjustWriteOp();
+            } catch (IOException exc) {
+                this.onConnectionError(exc);
+                key.cancel();
+            }
+        } else {
             this.adjustWriteOp();
-         }
-         catch (IOException exc)
-         {
-            this.onConnectionError(exc);
-            key.cancel();
-         }
-      }
-      else
-      {
-         this.adjustWriteOp();
-      }
-   }
+        }
+    }
 
-   /**
-    * Writes as many as possible bytes to the socket buffer
-    */
+    /**
+     * Writes as many as possible bytes to the socket buffer
+     */
 
-   public int flush()
-   {
-      int total = 0;
+    public int flush() {
+        int total = 0;
 
-      while (this.outbound.hasData())
-      {
-         int written;
+        while (this.outbound.hasData()) {
+            int written;
 
-         try
-         {
-            written = this.onReadyToWrite(System.currentTimeMillis());
-         }
-         catch (IOException exc)
-         {
-            written = 0;
-         }
-
-         if (written == 0)
-         {
-            break;
-         }
-
-         total += written;
-      }
-
-      return total;
-   }
-
-   /**
-    * Makes an attempt to write all outbound
-    * bytes, fails on failure.
-    *
-    * @throws PyroException on failure
-    */
-
-   public int flushOrDie() throws PyroException
-   {
-      int total = 0;
-
-      while (this.outbound.hasData())
-      {
-         int written;
-
-         try
-         {
-            written = this.onReadyToWrite(System.currentTimeMillis());
-         }
-         catch (IOException exc)
-         {
-            written = 0;
-         }
-
-         if (written == 0)
-         {
-            throw new PyroException("failed to flush, wrote " + total + " bytes");
-         }
-
-         total += written;
-      }
-
-      return total;
-   }
-
-   /**
-    * Returns whether there are bytes left in the
-    * outbound queue.
-    */
-
-   public boolean hasDataEnqueued()
-   {
-      this.selector.checkThread();
-
-      return this.outbound.hasData();
-   }
-
-   private boolean doShutdown = false;
-
-   /**
-    * Gracefully shuts down the connection. The connection
-    * is closed after the last outbound bytes are sent.
-    * Enqueuing new bytes after shutdown, is not allowed
-    * and will throw an exception
-    */
-
-   public void shutdown()
-   {
-      this.selector.checkThread();
-
-      this.doShutdown = true;
-
-      if (!this.hasDataEnqueued())
-      {
-         this.dropConnection();
-      }
-   }
-
-   /**
-    * Immediately drop the connection, regardless of any
-    * pending outbound bytes. Actual behaviour depends on
-    * the socket linger settings.
-    */
-
-   public void dropConnection()
-   {
-      this.selector.checkThread();
-
-      if (this.isDisconnected())
-      {
-         return;
-      }
-
-      Runnable drop = new Runnable()
-      {
-         @Override
-         @SuppressWarnings("synthetic-access")
-         public void run()
-         {
-            try
-            {
-               if (key.channel().isOpen())
-               {
-                  ((SocketChannel) key.channel()).close();
-               }
+            try {
+                written = this.onReadyToWrite(System.currentTimeMillis());
+            } catch (IOException exc) {
+                written = 0;
             }
-            catch (IOException exc)
-            {
-               selector().scheduleTask(this);
+
+            if (written == 0) {
+                break;
             }
-         }
-      };
 
-      drop.run();
+            total += written;
+        }
 
-      this.onConnectionError("local");
-   }
+        return total;
+    }
 
-   /**
-    * Returns whether the connection is connected to a remote client.
-    */
+    /**
+     * Makes an attempt to write all outbound bytes, fails on failure.
+     * 
+     * @throws PyroException
+     *             on failure
+     */
 
-   public boolean isDisconnected()
-   {
-      this.selector.checkThread();
+    public int flushOrDie() throws PyroException {
+        int total = 0;
 
-      return !((SocketChannel) this.key.channel()).isOpen();
-   }
+        while (this.outbound.hasData()) {
+            int written;
 
-   //
+            try {
+                written = this.onReadyToWrite(System.currentTimeMillis());
+            } catch (IOException exc) {
+                written = 0;
+            }
 
-   void onInterestOp(long now)
-   {
-      if (!key.isValid())
-      {
-         this.onConnectionError("remote");
-      }
-      else
-      {
-         try
-         {
-            if (key.isConnectable())
-               this.onReadyToConnect(now);
-            if (key.isReadable())
-               this.onReadyToRead(now);
-            if (key.isWritable())
-               this.onReadyToWrite(now);
-         }
-         catch (IOException exc)
-         {
-            this.onConnectionError(exc);
-            key.cancel();
-         }
-      }
-   }
+            if (written == 0) {
+                throw new PyroException("failed to flush, wrote " + total
+                        + " bytes");
+            }
 
-   private long timeout = 0L;
-   private long lastEventTime;
+            total += written;
+        }
 
-   boolean didTimeout(long now)
-   {
-      if (this.timeout == 0)
-         return false; // never timeout
-      return (now - this.lastEventTime) > this.timeout;
-   }
+        return total;
+    }
 
-   private void onReadyToConnect(long now) throws IOException
-   {
-      this.selector.checkThread();
-      this.lastEventTime = now;
+    /**
+     * Returns whether there are bytes left in the outbound queue.
+     */
 
-      this.selector.adjustInterestOp(key, SelectionKey.OP_CONNECT, false);
-      ((SocketChannel) key.channel()).finishConnect();
+    public boolean hasDataEnqueued() {
+        this.selector.checkThread();
 
-      for (PyroClientListener listener : this.listeners)
-         listener.connectedClient(this);
-   }
+        return this.outbound.hasData();
+    }
 
-   private void onReadyToRead(long now) throws IOException
-   {
-      this.selector.checkThread();
-      this.lastEventTime = now;
+    private boolean doShutdown = false;
 
-      SocketChannel channel = (SocketChannel) key.channel();
+    /**
+     * Gracefully shuts down the connection. The connection is closed after the
+     * last outbound bytes are sent. Enqueuing new bytes after shutdown, is not
+     * allowed and will throw an exception
+     */
 
-      ByteBuffer buffer = this.selector.networkBuffer;
+    public void shutdown() {
+        this.selector.checkThread();
 
-      // read from channel
-      buffer.clear();
-      int bytes = channel.read(buffer);
-      if (bytes == -1)
-         throw new EOFException();
-      buffer.flip();
+        this.doShutdown = true;
 
-      for (PyroClientListener listener : this.listeners)
-         listener.receivedData(this, buffer);
-   }
+        if (!this.hasDataEnqueued()) {
+            this.dropConnection();
+        }
+    }
 
-   private int onReadyToWrite(long now) throws IOException
-   {
-      this.selector.checkThread();
-      this.lastEventTime = now;
+    /**
+     * Immediately drop the connection, regardless of any pending outbound
+     * bytes. Actual behaviour depends on the socket linger settings.
+     */
 
-      int sent = 0;
+    public void dropConnection() {
+        this.selector.checkThread();
 
-      // copy outbound bytes into network buffer
-      ByteBuffer buffer = this.selector.networkBuffer;
-      buffer.clear();
-      this.outbound.get(buffer);
-      buffer.flip();
+        if (this.isDisconnected()) {
+            return;
+        }
 
-      // write to channel
-      if (buffer.hasRemaining())
-      {
-         SocketChannel channel = (SocketChannel) key.channel();
-         sent = channel.write(buffer);
-      }
-
-      if (sent > 0)
-      {
-         this.outbound.discard(sent);
-      }
-
-      for (PyroClientListener listener : this.listeners)
-         listener.sentData(this, sent);
-
-      this.adjustWriteOp();
-
-      if (this.doShutdown && !this.outbound.hasData())
-      {
-         this.dropConnection();
-      }
-
-      return sent;
-   }
-
-   void onConnectionError(final Object cause)
-   {
-      this.selector.checkThread();
-
-      try
-      {
-         // if the key is invalid, the channel may remain open!!
-         ((SocketChannel) this.key.channel()).close();
-      }
-      catch (IOException exc)
-      {
-         // type: java.io.IOException
-         // message: "A non-blocking socket operation could not be completed immediately"
-
-         // try again later
-         this.selector.scheduleTask(new Runnable()
-         {
+        Runnable drop = new Runnable() {
             @Override
-            public void run()
-            {
-               PyroClient.this.onConnectionError(cause);
+            @SuppressWarnings("synthetic-access")
+            public void run() {
+                try {
+                    if (key.channel().isOpen()) {
+                        ((SocketChannel) key.channel()).close();
+                    }
+                } catch (IOException exc) {
+                    selector().scheduleTask(this);
+                }
             }
-         });
+        };
 
-         return;
-      }
+        drop.run();
 
-      if (this.server != null)
-      {
-         this.server.onDisconnect(this);
-      }
+        this.onConnectionError("local");
+    }
 
-      if (cause instanceof ConnectException)
-      {
-         for (PyroClientListener listener : this.listeners)
-            listener.unconnectableClient(this);
-      }
-      else if (cause instanceof EOFException) // after read=-1
-      {
-         for (PyroClientListener listener : this.listeners)
-            listener.disconnectedClient(this);
-      }
-      else if (cause instanceof IOException)
-      {
-         for (PyroClientListener listener : this.listeners)
-            listener.droppedClient(this, (IOException) cause);
-      }
-      else if (!(cause instanceof String))
-      {
-         throw new IllegalStateException((Exception) cause);
-      }
-      else if (cause.equals("local"))
-      {
-         for (PyroClientListener listener : this.listeners)
-            listener.disconnectedClient(this);
-      }
-      else if (cause.equals("remote"))
-      {
-         for (PyroClientListener listener : this.listeners)
-            listener.droppedClient(this, null);
-      }
-      else
-      {
-         throw new IllegalStateException("illegal cause: " + cause);
-      }
-   }
+    /**
+     * Returns whether the connection is connected to a remote client.
+     */
 
-   public String toString()
-   {
-      return this.getClass().getSimpleName() + "[" + this.getAddressText() + "]";
-   }
+    public boolean isDisconnected() {
+        this.selector.checkThread();
 
-   private final String getAddressText()
-   {
-      if (!this.key.channel().isOpen())
-         return "closed";
+        return !((SocketChannel) this.key.channel()).isOpen();
+    }
 
-      InetSocketAddress sockaddr = this.getRemoteAddress();
-      if (sockaddr == null)
-         return "connecting";
-      InetAddress inetaddr = sockaddr.getAddress();
-      return inetaddr.getHostAddress() + "@" + sockaddr.getPort();
-   }
+    //
 
-   //
+    void onInterestOp(long now) {
+        if (!key.isValid()) {
+            this.onConnectionError("remote");
+        } else {
+            try {
+                if (key.isConnectable())
+                    this.onReadyToConnect(now);
+                if (key.isReadable())
+                    this.onReadyToRead(now);
+                if (key.isWritable())
+                    this.onReadyToWrite(now);
+            } catch (IOException exc) {
+                this.onConnectionError(exc);
+                key.cancel();
+            }
+        }
+    }
 
-   void adjustWriteOp()
-   {
-      this.selector.checkThread();
+    private long timeout = 0L;
 
-      boolean interested = this.outbound.hasData();
+    private long lastEventTime;
 
-      this.selector.adjustInterestOp(this.key, SelectionKey.OP_WRITE, interested);
-   }
+    boolean didTimeout(long now) {
+        if (this.timeout == 0)
+            return false; // never timeout
+        return (now - this.lastEventTime) > this.timeout;
+    }
 
-   static final SelectionKey bindAndConfigure(PyroSelector selector, SocketChannel channel, InetSocketAddress bind) throws IOException
-   {
-      selector.checkThread();
+    private void onReadyToConnect(long now) throws IOException {
+        this.selector.checkThread();
+        this.lastEventTime = now;
 
-      channel.socket().bind(bind);
+        this.selector.adjustInterestOp(key, SelectionKey.OP_CONNECT, false);
+        ((SocketChannel) key.channel()).finishConnect();
 
-      return configure(selector, channel, true);
-   }
+        for (PyroClientListener listener: this.listeners)
+            listener.connectedClient(this);
+    }
 
-   static final SelectionKey configure(PyroSelector selector, SocketChannel channel, boolean connect) throws IOException
-   {
-      selector.checkThread();
+    private void onReadyToRead(long now) throws IOException {
+        this.selector.checkThread();
+        this.lastEventTime = now;
 
-      channel.configureBlocking(false);
-      //channel.socket().setSoLinger(false, 0); // this will b0rk your connections
-      channel.socket().setSoLinger(true, 4);
-      channel.socket().setReuseAddress(true);
-      channel.socket().setKeepAlive(false);
-      channel.socket().setTcpNoDelay(true);
-      channel.socket().setReceiveBufferSize(PyroSelector.BUFFER_SIZE);
-      channel.socket().setSendBufferSize(PyroSelector.BUFFER_SIZE);
+        SocketChannel channel = (SocketChannel) key.channel();
 
-      int ops = SelectionKey.OP_READ;
-      if (connect)
-         ops |= SelectionKey.OP_CONNECT;
+        ByteBuffer buffer = this.selector.networkBuffer;
 
-      return selector.register(channel, ops);
-   }
+        // read from channel
+        buffer.clear();
+        int bytes = channel.read(buffer);
+        if (bytes == -1)
+            throw new EOFException();
+        buffer.flip();
+
+        for (PyroClientListener listener: this.listeners)
+            listener.receivedData(this, buffer);
+    }
+
+    private int onReadyToWrite(long now) throws IOException {
+        this.selector.checkThread();
+        this.lastEventTime = now;
+
+        int sent = 0;
+
+        // copy outbound bytes into network buffer
+        ByteBuffer buffer = this.selector.networkBuffer;
+        buffer.clear();
+        this.outbound.get(buffer);
+        buffer.flip();
+
+        // write to channel
+        if (buffer.hasRemaining()) {
+            SocketChannel channel = (SocketChannel) key.channel();
+            sent = channel.write(buffer);
+        }
+
+        if (sent > 0) {
+            this.outbound.discard(sent);
+        }
+
+        for (PyroClientListener listener: this.listeners)
+            listener.sentData(this, sent);
+
+        this.adjustWriteOp();
+
+        if (this.doShutdown && !this.outbound.hasData()) {
+            this.dropConnection();
+        }
+
+        return sent;
+    }
+
+    void onConnectionError(final Object cause) {
+        this.selector.checkThread();
+
+        try {
+            // if the key is invalid, the channel may remain open!!
+            ((SocketChannel) this.key.channel()).close();
+        } catch (IOException exc) {
+            // type: java.io.IOException
+            // message:
+            // "A non-blocking socket operation could not be completed immediately"
+
+            // try again later
+            this.selector.scheduleTask(new Runnable() {
+                @Override
+                public void run() {
+                    PyroClient.this.onConnectionError(cause);
+                }
+            });
+
+            return;
+        }
+
+        if (this.server != null) {
+            this.server.onDisconnect(this);
+        }
+
+        if (cause instanceof ConnectException) {
+            for (PyroClientListener listener: this.listeners)
+                listener.unconnectableClient(this);
+        } else if (cause instanceof EOFException) // after read=-1
+        {
+            for (PyroClientListener listener: this.listeners)
+                listener.disconnectedClient(this);
+        } else if (cause instanceof IOException) {
+            for (PyroClientListener listener: this.listeners)
+                listener.droppedClient(this, (IOException) cause);
+        } else if (!(cause instanceof String)) {
+            throw new IllegalStateException((Exception) cause);
+        } else if (cause.equals("local")) {
+            for (PyroClientListener listener: this.listeners)
+                listener.disconnectedClient(this);
+        } else if (cause.equals("remote")) {
+            for (PyroClientListener listener: this.listeners)
+                listener.droppedClient(this, null);
+        } else {
+            throw new IllegalStateException("illegal cause: " + cause);
+        }
+    }
+
+    public String toString() {
+        return this.getClass().getSimpleName() + "[" + this.getAddressText()
+                + "]";
+    }
+
+    private final String getAddressText() {
+        if (!this.key.channel().isOpen())
+            return "closed";
+
+        InetSocketAddress sockaddr = this.getRemoteAddress();
+        if (sockaddr == null)
+            return "connecting";
+        InetAddress inetaddr = sockaddr.getAddress();
+        return inetaddr.getHostAddress() + "@" + sockaddr.getPort();
+    }
+
+    //
+
+    void adjustWriteOp() {
+        this.selector.checkThread();
+
+        boolean interested = this.outbound.hasData();
+
+        this.selector.adjustInterestOp(this.key, SelectionKey.OP_WRITE,
+                interested);
+    }
+
+    static final SelectionKey bindAndConfigure(PyroSelector selector,
+            SocketChannel channel, InetSocketAddress bind) throws IOException {
+        selector.checkThread();
+
+        channel.socket().bind(bind);
+
+        return configure(selector, channel, true);
+    }
+
+    static final SelectionKey configure(PyroSelector selector,
+            SocketChannel channel, boolean connect) throws IOException {
+        selector.checkThread();
+
+        channel.configureBlocking(false);
+        // channel.socket().setSoLinger(false, 0); // this will b0rk your
+        // connections
+        channel.socket().setSoLinger(true, 4);
+        channel.socket().setReuseAddress(true);
+        channel.socket().setKeepAlive(false);
+        channel.socket().setTcpNoDelay(true);
+        channel.socket().setReceiveBufferSize(PyroSelector.BUFFER_SIZE);
+        channel.socket().setSendBufferSize(PyroSelector.BUFFER_SIZE);
+
+        int ops = SelectionKey.OP_READ;
+        if (connect)
+            ops |= SelectionKey.OP_CONNECT;
+
+        return selector.register(channel, ops);
+    }
 }

@@ -13,57 +13,51 @@ import jawnae.pyronet.PyroSelector;
 import jawnae.pyronet.events.PyroClientAdapter;
 import jawnae.pyronet.events.PyroClientListener;
 
-public class RawHttpClient
-{
-   public static final String HOST = "www.google.com";
-   public static final int    PORT = 80;
+public class RawHttpClient {
+    public static final String HOST = "www.google.com";
 
-   public static void main(String[] args) throws IOException
-   {
-      PyroSelector selector = new PyroSelector();
+    public static final int PORT = 80;
 
-      InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
-      System.out.println("connecting...");
-      PyroClient client = selector.connect(bind);
+    public static void main(String[] args) throws IOException {
+        PyroSelector selector = new PyroSelector();
 
-      PyroClientListener listener = new PyroClientAdapter()
-      {
-         @Override
-         public void connectedClient(PyroClient client)
-         {
-            System.out.println("<connected>");
+        InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
+        System.out.println("connecting...");
+        PyroClient client = selector.connect(bind);
 
-            // create HTTP request
-            StringBuilder request = new StringBuilder();
-            request.append("GET / HTTP/1.1\r\n");
-            request.append("Host: " + HOST + "\r\n");
-            request.append("Connection: close\r\n");
-            request.append("\r\n");
+        PyroClientListener listener = new PyroClientAdapter() {
+            @Override
+            public void connectedClient(PyroClient client) {
+                System.out.println("<connected>");
 
-            byte[] data = request.toString().getBytes();
-            client.write(ByteBuffer.wrap(data));
-         }
+                // create HTTP request
+                StringBuilder request = new StringBuilder();
+                request.append("GET / HTTP/1.1\r\n");
+                request.append("Host: " + HOST + "\r\n");
+                request.append("Connection: close\r\n");
+                request.append("\r\n");
 
-         @Override
-         public void receivedData(PyroClient client, ByteBuffer data)
-         {
-            while (data.hasRemaining())
-               System.out.print((char) data.get());
-            System.out.flush();
-         }
+                byte[] data = request.toString().getBytes();
+                client.write(ByteBuffer.wrap(data));
+            }
 
-         @Override
-         public void disconnectedClient(PyroClient client)
-         {
-            System.out.println("<disconnected>");
-         }
-      };
+            @Override
+            public void receivedData(PyroClient client, ByteBuffer data) {
+                while (data.hasRemaining())
+                    System.out.print((char) data.get());
+                System.out.flush();
+            }
 
-      client.addListener(listener);
+            @Override
+            public void disconnectedClient(PyroClient client) {
+                System.out.println("<disconnected>");
+            }
+        };
 
-      while (true)
-      {
-         selector.select();
-      }
-   }
+        client.addListener(listener);
+
+        while (true) {
+            selector.select();
+        }
+    }
 }

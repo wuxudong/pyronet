@@ -12,46 +12,43 @@ import jawnae.pyronet.PyroSelector;
 import jawnae.pyronet.PyroServer;
 import jawnae.pyronet.traffic.ByteSinkPacket16;
 
-public class PacketServer
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class PacketServer {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      final PyroSelector selector = new PyroSelector();
+    public static final int PORT = 8421;
 
-      final PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
+    public static void main(String[] args) throws IOException {
+        final PyroSelector selector = new PyroSelector();
 
-      final long selectTimeout = 1000;
-      final long broadcastInterval = 5000;
-      long lastSent = 0;
+        final PyroServer server = selector.listen(new InetSocketAddress(HOST,
+                PORT));
 
-      while (true)
-      {
-         // perform network I/O
-         selector.select(selectTimeout);
+        final long selectTimeout = 1000;
+        final long broadcastInterval = 5000;
+        long lastSent = 0;
 
-         final long now = System.currentTimeMillis();
+        while (true) {
+            // perform network I/O
+            selector.select(selectTimeout);
 
-         // wait for broadcast interval
-         if (now - lastSent < broadcastInterval)
-         {
-            continue;
-         }
+            final long now = System.currentTimeMillis();
 
-         // create the packet data
-         String text = "Server time: " + now;
-         System.out.println(text);
-         byte[] data = text.getBytes();
+            // wait for broadcast interval
+            if (now - lastSent < broadcastInterval) {
+                continue;
+            }
 
-         // send packet to all clients
-         for (PyroClient client : server)
-         {
-            ByteSinkPacket16.sendTo(client, data);
-         }
+            // create the packet data
+            String text = "Server time: " + now;
+            System.out.println(text);
+            byte[] data = text.getBytes();
 
-         lastSent = now;
-      }
-   }
+            // send packet to all clients
+            for (PyroClient client: server) {
+                ByteSinkPacket16.sendTo(client, data);
+            }
+
+            lastSent = now;
+        }
+    }
 }

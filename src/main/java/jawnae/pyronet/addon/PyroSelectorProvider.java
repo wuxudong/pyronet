@@ -8,7 +8,6 @@ import java.nio.channels.SocketChannel;
 
 import jawnae.pyronet.PyroSelector;
 
-public interface PyroSelectorProvider
-{
-   public PyroSelector provideFor(SocketChannel channel);
+public interface PyroSelectorProvider {
+    public PyroSelector provideFor(SocketChannel channel);
 }

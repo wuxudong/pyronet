@@ -16,82 +16,78 @@ import jawnae.pyronet.traffic.ByteSink;
 import jawnae.pyronet.traffic.ByteSinkEndsWith;
 import jawnae.pyronet.traffic.PyroByteSinkFeeder;
 
-public class ByteSinkEchoServer
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class ByteSinkEchoServer {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      PyroSelector selector = new PyroSelector();
+    public static final int PORT = 8421;
 
-      PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
-      System.out.println("listening: " + server);
+    public static void main(String[] args) throws IOException {
+        PyroSelector selector = new PyroSelector();
 
-      server.addListener(new PyroServerListener()
-      {
-         @Override
-         public void acceptedClient(PyroClient client)
-         {
-            System.out.println("accepted-client: " + client);
+        PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
+        System.out.println("listening: " + server);
 
-            readLineAndEcho(client);
-         }
-      });
+        server.addListener(new PyroServerListener() {
+            @Override
+            public void acceptedClient(PyroClient client) {
+                System.out.println("accepted-client: " + client);
 
-      while (true)
-      {
-         selector.select();
-      }
-   }
+                readLineAndEcho(client);
+            }
+        });
 
-   static final byte[]  newline                  = "\r\n".getBytes();
-   static final int     maxLineLength            = 1024;
-   static final boolean includeDelimiterInBuffer = false;
+        while (true) {
+            selector.select();
+        }
+    }
 
-   static void readLineAndEcho(final PyroClient client)
-   {
-      // we need some way to process received bytes, in a
-      // way makes it easier to handle them
-      //
-      // we are going to read a line (delimited by "\r\n")
-      // so we use the ByteSinkEndsWith class
+    static final byte[] newline = "\r\n".getBytes();
 
-      ByteSink lineSink = new ByteSinkEndsWith(newline, maxLineLength, includeDelimiterInBuffer)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            ByteBuffer echo = buffer.slice();
+    static final int maxLineLength = 1024;
 
-            // convert data to text
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
-            String text = new String(data);
+    static final boolean includeDelimiterInBuffer = false;
 
-            // dump to console
-            System.out.println("received \"" + text + "\" from " + client);
+    static void readLineAndEcho(final PyroClient client) {
+        // we need some way to process received bytes, in a
+        // way makes it easier to handle them
+        //
+        // we are going to read a line (delimited by "\r\n")
+        // so we use the ByteSinkEndsWith class
 
-            // echo data back to client            
-            client.write(echo);
-            client.write(ByteBuffer.wrap(newline)); // append newline
+        ByteSink lineSink = new ByteSinkEndsWith(newline, maxLineLength,
+                includeDelimiterInBuffer) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                ByteBuffer echo = buffer.slice();
 
-            // disconnect after data was sent
-            client.shutdown();
-         }
-      };
+                // convert data to text
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                String text = new String(data);
 
-      // connect the raw network events to a structure that
-      // transfers received bytes into ByteSinks (byte handlers
-      // that split the byte stream into chunks)
-      PyroByteSinkFeeder feeder;
-      feeder = new PyroByteSinkFeeder(client);
+                // dump to console
+                System.out.println("received \"" + text + "\" from " + client);
 
-      // schedule the next ByteSink, which is going to be 'filled' first
-      feeder.addByteSink(lineSink);
+                // echo data back to client
+                client.write(echo);
+                client.write(ByteBuffer.wrap(newline)); // append newline
 
-      // PyroByteSinkFeeder is a PyroClientListener, which
-      // enables it to hook into the network-events
-      client.addListener(feeder);
-   }
+                // disconnect after data was sent
+                client.shutdown();
+            }
+        };
+
+        // connect the raw network events to a structure that
+        // transfers received bytes into ByteSinks (byte handlers
+        // that split the byte stream into chunks)
+        PyroByteSinkFeeder feeder;
+        feeder = new PyroByteSinkFeeder(client);
+
+        // schedule the next ByteSink, which is going to be 'filled' first
+        feeder.addByteSink(lineSink);
+
+        // PyroByteSinkFeeder is a PyroClientListener, which
+        // enables it to hook into the network-events
+        client.addListener(feeder);
+    }
 }

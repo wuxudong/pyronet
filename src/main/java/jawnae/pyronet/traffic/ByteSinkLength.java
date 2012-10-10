@@ -6,40 +6,36 @@ package jawnae.pyronet.traffic;
 
 import java.nio.ByteBuffer;
 
-public abstract class ByteSinkLength implements ByteSink
-{
-   private final ByteBuffer result;
-   private int              filled;
+public abstract class ByteSinkLength implements ByteSink {
+    private final ByteBuffer result;
 
-   public ByteSinkLength(int size)
-   {
-      if (size == 0)
-         throw new IllegalArgumentException();
-      this.result = ByteBuffer.allocate(size);
+    private int filled;
 
-      this.reset();
-   }
+    public ByteSinkLength(int size) {
+        if (size == 0)
+            throw new IllegalArgumentException();
+        this.result = ByteBuffer.allocate(size);
 
-   @Override
-   public void reset()
-   {
-      this.result.clear();
-      this.filled = 0;
-   }
+        this.reset();
+    }
 
-   @Override
-   public int feed(byte b)
-   {
-      this.result.put(this.filled, b);
+    @Override
+    public void reset() {
+        this.result.clear();
+        this.filled = 0;
+    }
 
-      this.filled += 1;
+    @Override
+    public int feed(byte b) {
+        this.result.put(this.filled, b);
 
-      if (this.filled == this.result.capacity())
-      {
-         this.onReady(this.result);
-         return FEED_ACCEPTED_LAST;
-      }
+        this.filled += 1;
 
-      return ByteSink.FEED_ACCEPTED;
-   }
+        if (this.filled == this.result.capacity()) {
+            this.onReady(this.result);
+            return FEED_ACCEPTED_LAST;
+        }
+
+        return ByteSink.FEED_ACCEPTED;
+    }
 }

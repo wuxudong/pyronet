@@ -15,69 +15,62 @@ import jawnae.pyronet.traffic.ByteSink;
 import jawnae.pyronet.traffic.ByteSinkEndsWith;
 import jawnae.pyronet.traffic.PyroByteSinkFeeder;
 
-public class ByteSinkEchoClient extends PyroClientAdapter
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class ByteSinkEchoClient extends PyroClientAdapter {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      ByteSinkEchoClient handler = new ByteSinkEchoClient();
-      PyroSelector selector = new PyroSelector();
+    public static final int PORT = 8421;
 
-      InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
-      System.out.println("connecting...");
-      PyroClient client = selector.connect(bind);
-      client.addListener(handler);
+    public static void main(String[] args) throws IOException {
+        ByteSinkEchoClient handler = new ByteSinkEchoClient();
+        PyroSelector selector = new PyroSelector();
 
-      while (true)
-      {
-         // perform network I/O
+        InetSocketAddress bind = new InetSocketAddress(HOST, PORT);
+        System.out.println("connecting...");
+        PyroClient client = selector.connect(bind);
+        client.addListener(handler);
 
-         selector.select();
-      }
-   }
+        while (true) {
+            // perform network I/O
 
-   static byte[] delimiter = "\r\n".getBytes();
+            selector.select();
+        }
+    }
 
-   @Override
-   public void connectedClient(final PyroClient client)
-   {
-      System.out.println("connected: " + client);
+    static byte[] delimiter = "\r\n".getBytes();
 
-      String message = "hello there!";
+    @Override
+    public void connectedClient(final PyroClient client) {
+        System.out.println("connected: " + client);
 
-      System.out.println("client: yelling \"" + message + "\" to the server");
+        String message = "hello there!";
 
-      // send "hello there!\r\n"
-      client.write(ByteBuffer.wrap(message.getBytes()));
-      client.write(ByteBuffer.wrap(delimiter));
+        System.out.println("client: yelling \"" + message + "\" to the server");
 
-      ByteSink echoSink = new ByteSinkEndsWith(delimiter, 1024, false)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            // convert data to text
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
-            String text = new String(data);
+        // send "hello there!\r\n"
+        client.write(ByteBuffer.wrap(message.getBytes()));
+        client.write(ByteBuffer.wrap(delimiter));
 
-            System.out.println("server echoed: \"" + text + "\"");
-         }
-      };
+        ByteSink echoSink = new ByteSinkEndsWith(delimiter, 1024, false) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                // convert data to text
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                String text = new String(data);
 
-      PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
-      feeder.addByteSink(echoSink);
-      client.addListener(feeder);
+                System.out.println("server echoed: \"" + text + "\"");
+            }
+        };
 
-      client.addListener(new PyroClientAdapter()
-      {
-         @Override
-         public void disconnectedClient(PyroClient client)
-         {
-            System.out.println("server closed connection.");
-         }
-      });
-   }
+        PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
+        feeder.addByteSink(echoSink);
+        client.addListener(feeder);
+
+        client.addListener(new PyroClientAdapter() {
+            @Override
+            public void disconnectedClient(PyroClient client) {
+                System.out.println("server closed connection.");
+            }
+        });
+    }
 }

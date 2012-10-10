@@ -15,109 +15,99 @@ import jawnae.pyronet.events.PyroServerListener;
 import jawnae.pyronet.traffic.ByteSinkLength;
 import jawnae.pyronet.traffic.PyroByteSinkFeeder;
 
-public class AdderServer
-{
-   public static final String HOST = "127.0.0.1";
-   public static final int    PORT = 8421;
+public class AdderServer {
+    public static final String HOST = "127.0.0.1";
 
-   public static void main(String[] args) throws IOException
-   {
-      PyroSelector selector = new PyroSelector();
+    public static final int PORT = 8421;
 
-      PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
-      System.out.println("listening: " + server);
+    public static void main(String[] args) throws IOException {
+        PyroSelector selector = new PyroSelector();
 
-      server.addListener(new PyroServerListener()
-      {
-         @Override
-         public void acceptedClient(PyroClient client)
-         {
-            System.out.println("accepted-client: " + client);
+        PyroServer server = selector.listen(new InetSocketAddress(HOST, PORT));
+        System.out.println("listening: " + server);
 
-            if (Math.random() < 0.5)
-               handleWithOneRead(client);
-            else
-               handleWithTwoReads(client);
-         }
-      });
+        server.addListener(new PyroServerListener() {
+            @Override
+            public void acceptedClient(PyroClient client) {
+                System.out.println("accepted-client: " + client);
 
-      while (true)
-      {
-         selector.select();
-      }
-   }
+                if (Math.random() < 0.5)
+                    handleWithOneRead(client);
+                else
+                    handleWithTwoReads(client);
+            }
+        });
 
-   static void handleWithOneRead(final PyroClient client)
-   {
-      System.out.println("handleWithOneRead");
+        while (true) {
+            selector.select();
+        }
+    }
 
-      final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
+    static void handleWithOneRead(final PyroClient client) {
+        System.out.println("handleWithOneRead");
 
-      // we expect 2 integers from the client, so read 8 bytes
-      ByteSinkLength data12 = new ByteSinkLength(4 + 4)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            // add the values
-            int value1 = buffer.getInt();
-            int value2 = buffer.getInt();
-            int answer = value1 + value2;
-            System.out.println("calculated: " + value1 + "+" + value2 + "=" + answer);
+        final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
 
-            ByteBuffer result = ByteBuffer.allocate(4);
-            result.putInt(answer);
-            result.flip();
+        // we expect 2 integers from the client, so read 8 bytes
+        ByteSinkLength data12 = new ByteSinkLength(4 + 4) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                // add the values
+                int value1 = buffer.getInt();
+                int value2 = buffer.getInt();
+                int answer = value1 + value2;
+                System.out.println("calculated: " + value1 + "+" + value2 + "="
+                        + answer);
 
-            // send it to the client
-            client.write(result);
-         }
-      };
-      feeder.addByteSink(data12);
+                ByteBuffer result = ByteBuffer.allocate(4);
+                result.putInt(answer);
+                result.flip();
 
-      client.addListener(feeder);
-   }
+                // send it to the client
+                client.write(result);
+            }
+        };
+        feeder.addByteSink(data12);
 
-   static void handleWithTwoReads(final PyroClient client)
-   {
-      System.out.println("handleWithTwoReads");
+        client.addListener(feeder);
+    }
 
-      final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
+    static void handleWithTwoReads(final PyroClient client) {
+        System.out.println("handleWithTwoReads");
 
-      final int[] values = new int[2];
+        final PyroByteSinkFeeder feeder = new PyroByteSinkFeeder(client);
 
-      // we expect 2 integers from the client
-      ByteSinkLength data1 = new ByteSinkLength(4)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            values[0] = buffer.getInt();
-         }
-      };
+        final int[] values = new int[2];
 
-      ByteSinkLength data2 = new ByteSinkLength(4)
-      {
-         @Override
-         public void onReady(ByteBuffer buffer)
-         {
-            values[1] = buffer.getInt();
+        // we expect 2 integers from the client
+        ByteSinkLength data1 = new ByteSinkLength(4) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                values[0] = buffer.getInt();
+            }
+        };
 
-            System.out.println("calculated: " + values[0] + "+" + values[1] + "=" + (values[0] + values[1]));
+        ByteSinkLength data2 = new ByteSinkLength(4) {
+            @Override
+            public void onReady(ByteBuffer buffer) {
+                values[1] = buffer.getInt();
 
-            // add the values
-            ByteBuffer result = ByteBuffer.allocate(4);
-            result.putInt(values[0] + values[1]);
-            result.flip();
+                System.out.println("calculated: " + values[0] + "+" + values[1]
+                        + "=" + (values[0] + values[1]));
 
-            // send it to the client
-            client.write(result);
-         }
-      };
-      feeder.addByteSink(data1);
-      feeder.addByteSink(data2);
+                // add the values
+                ByteBuffer result = ByteBuffer.allocate(4);
+                result.putInt(values[0] + values[1]);
+                result.flip();
 
-      // 
-      client.addListener(feeder);
-   }
+                // send it to the client
+                client.write(result);
+            }
+        };
+        feeder.addByteSink(data1);
+        feeder.addByteSink(data2);
+
+        //
+        client.addListener(feeder);
+    }
 }

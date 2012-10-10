@@ -6,27 +6,29 @@ package jawnae.pyronet.traffic;
 
 import java.nio.ByteBuffer;
 
-public interface ByteSink
-{
-   public static int FEED_ACCEPTED      = 1;
-   public static int FEED_ACCEPTED_LAST = 2;
-   public static int FEED_REJECTED      = 3;
+public interface ByteSink {
+    public static int FEED_ACCEPTED = 1;
 
-   /**
-    * determines what to do with the specified byte: accept, accept as final byte, reject
-    */
+    public static int FEED_ACCEPTED_LAST = 2;
 
-   public int feed(byte b);
+    public static int FEED_REJECTED = 3;
 
-   /**
-    * Resets the state of this ByteSink, allowing it to be enqueued again
-    */
+    /**
+     * determines what to do with the specified byte: accept, accept as final
+     * byte, reject
+     */
 
-   public void reset();
+    public int feed(byte b);
 
-   /**
-    * Called by the client when this ByteSink is complete
-    */
+    /**
+     * Resets the state of this ByteSink, allowing it to be enqueued again
+     */
 
-   public void onReady(ByteBuffer buffer);
+    public void reset();
+
+    /**
+     * Called by the client when this ByteSink is complete
+     */
+
+    public void onReady(ByteBuffer buffer);
 }

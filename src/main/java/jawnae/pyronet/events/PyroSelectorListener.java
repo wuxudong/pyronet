@@ -9,27 +9,26 @@ import java.io.IOException;
 import jawnae.pyronet.PyroClient;
 import jawnae.pyronet.PyroServer;
 
-public interface PyroSelectorListener
-{
-   public void executingTask(Runnable task);
+public interface PyroSelectorListener {
+    public void executingTask(Runnable task);
 
-   public void taskCrashed(Runnable task, Throwable cause);
+    public void taskCrashed(Runnable task, Throwable cause);
 
-   //
+    //
 
-   public void selectedKeys(int count);
+    public void selectedKeys(int count);
 
-   public void selectFailure(IOException cause);
+    public void selectFailure(IOException cause);
 
-   //
+    //
 
-   public void serverSelected(PyroServer server);
+    public void serverSelected(PyroServer server);
 
-   public void clientSelected(PyroClient client, int readyOps);
+    public void clientSelected(PyroClient client, int readyOps);
 
-   //
+    //
 
-   public void serverBindFailed(IOException cause);
+    public void serverBindFailed(IOException cause);
 
-   public void clientBindFailed(IOException cause);
+    public void clientBindFailed(IOException cause);
 }

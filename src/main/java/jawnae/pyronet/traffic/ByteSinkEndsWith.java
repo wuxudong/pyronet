@@ -6,57 +6,55 @@ package jawnae.pyronet.traffic;
 
 import java.nio.ByteBuffer;
 
-public abstract class ByteSinkEndsWith implements ByteSink
-{
-   private final ByteBuffer result;
-   private final byte[]     endsWith;
-   private final boolean    includeEndsWith;
-   private int              matchCount;
-   private int              filled;
+public abstract class ByteSinkEndsWith implements ByteSink {
+    private final ByteBuffer result;
 
-   public ByteSinkEndsWith(byte[] endsWith, int capacity, boolean includeEndsWith)
-   {
-      if (endsWith == null || endsWith.length == 0)
-         throw new IllegalStateException();
-      this.result = ByteBuffer.allocate(capacity);
-      this.endsWith = endsWith;
-      this.includeEndsWith = includeEndsWith;
+    private final byte[] endsWith;
 
-      this.reset();
-   }
+    private final boolean includeEndsWith;
 
-   @Override
-   public void reset()
-   {
-      this.result.clear();
-      this.matchCount = 0;
-      this.filled = 0;
-   }
+    private int matchCount;
 
-   @Override
-   public int feed(byte b)
-   {
-      if (this.endsWith[this.matchCount] == b)
-      {
-         this.matchCount++;
-      }
-      else
-      {
-         this.matchCount = 0;
-      }
+    private int filled;
 
-      this.result.put(this.filled, b);
+    public ByteSinkEndsWith(byte[] endsWith, int capacity,
+            boolean includeEndsWith) {
+        if (endsWith == null || endsWith.length == 0)
+            throw new IllegalStateException();
+        this.result = ByteBuffer.allocate(capacity);
+        this.endsWith = endsWith;
+        this.includeEndsWith = includeEndsWith;
 
-      this.filled += 1;
+        this.reset();
+    }
 
-      if (this.matchCount == this.endsWith.length)
-      {
-         int len = this.filled - (this.includeEndsWith ? 0 : this.endsWith.length);
-         this.result.limit(len);
-         this.onReady(this.result);
-         return FEED_ACCEPTED_LAST;
-      }
+    @Override
+    public void reset() {
+        this.result.clear();
+        this.matchCount = 0;
+        this.filled = 0;
+    }
 
-      return ByteSink.FEED_ACCEPTED;
-   }
+    @Override
+    public int feed(byte b) {
+        if (this.endsWith[this.matchCount] == b) {
+            this.matchCount++;
+        } else {
+            this.matchCount = 0;
+        }
+
+        this.result.put(this.filled, b);
+
+        this.filled += 1;
+
+        if (this.matchCount == this.endsWith.length) {
+            int len = this.filled
+                    - (this.includeEndsWith ? 0 : this.endsWith.length);
+            this.result.limit(len);
+            this.onReady(this.result);
+            return FEED_ACCEPTED_LAST;
+        }
+
+        return ByteSink.FEED_ACCEPTED;
+    }
 }
