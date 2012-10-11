@@ -20,6 +20,8 @@ public class ByteSinkEchoClient extends PyroClientAdapter {
 
     public static final int PORT = 8421;
 
+    public static int index = 0;
+
     public static void main(String[] args) throws IOException {
         ByteSinkEchoClient handler = new ByteSinkEchoClient();
         PyroSelector selector = new PyroSelector();
@@ -42,7 +44,7 @@ public class ByteSinkEchoClient extends PyroClientAdapter {
     public void connectedClient(final PyroClient client) {
         System.out.println("connected: " + client);
 
-        String message = "hello there!";
+        String message = "hello there!" + " " + index++;
 
         System.out.println("client: yelling \"" + message + "\" to the server");
 
@@ -70,6 +72,18 @@ public class ByteSinkEchoClient extends PyroClientAdapter {
             @Override
             public void disconnectedClient(PyroClient client) {
                 System.out.println("server closed connection.");
+
+                // add reconnect ability
+                try {
+                    Thread.sleep(1000);
+                    PyroClient reconnectClient = client.selector().connect(
+                            client.getRemoteAddress());
+                    reconnectClient.addListener(new ByteSinkEchoClient());
+                    client.selector().wakeup();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
         });
     }

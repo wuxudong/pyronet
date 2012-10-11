@@ -99,7 +99,6 @@ public class PyroClient {
      * set
      */
 
-    @SuppressWarnings("unchecked")
     public <T> T attachment() {
         return (T) this.attachment;
     }
